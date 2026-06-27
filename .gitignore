@@ -1,0 +1,15 @@
+node_modules/
+.DS_Store
+*.log
+.env
+.env.*
+firebase-debug.log*
+serviceAccount.json
+cloudinary-config.js
+firebase-config.js
+google-services.json
+*.key
+*.pem
+*.p12
+*.crt
+*.jks
