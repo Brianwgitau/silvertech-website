@@ -1,48 +1,62 @@
-// Try to load /firebase-config.js from site root, fallback to gh-pages raw file if missing.
-(function loadFirebaseConfig(){
-  // Determine repository base using the loader script's own URL when possible.
-  // This is more reliable than location.pathname because pages may be served
-  // from different base paths (user site vs project site).
-  let repoBase = '';
-  try {
-    const scriptUrl = document.currentScript && document.currentScript.src;
-    if (scriptUrl) {
-      const p = new URL(scriptUrl).pathname; // e.g. /silvertech-website/js/load-firebase-config.js
-      const idx = p.indexOf('/js/');
-      if (idx !== -1) repoBase = p.substring(0, idx);
+(function () {
+  function getRepoBase() {
+    try {
+      const scriptUrl = document.currentScript && document.currentScript.src;
+      if (!scriptUrl) {
+        return '';
+      }
+
+      const pathname = new URL(scriptUrl).pathname;
+      const idx = pathname.indexOf('/js/');
+      return idx !== -1 ? pathname.substring(0, idx) : '';
+    } catch (error) {
+      return '';
     }
-  } catch (e) {
-    repoBase = '';
   }
 
-  const candidateUrls = [];
-  if (repoBase) candidateUrls.push(`${location.origin}${repoBase}/firebase-config.js`);
-  // Try site-root path too (useful for user/org pages or if repo deployed at root)
-  candidateUrls.push(`${location.origin}/firebase-config.js`);
-  // final fallback: raw gh-pages branch
-  candidateUrls.push('https://raw.githubusercontent.com/Brianwgitau/silvertech-website/gh-pages/firebase-config.js');
+  function buildCandidateUrls() {
+    const repoBase = getRepoBase();
+    const candidates = [];
+    const origin = window.location.origin;
 
-  function insertScript(src){
-    const s = document.createElement('script');
-    s.src = src;
-    s.async = false; // preserve execution order before firebase-init
-    document.head.appendChild(s);
+    if (repoBase) {
+      candidates.push(`${origin}${repoBase}/firebase-config.js`);
+    }
+
+    candidates.push(`${origin}/firebase-config.js`);
+    candidates.push('https://raw.githubusercontent.com/Brianwgitau/silvertech-website/gh-pages/firebase-config.js');
+
+    return [...new Set(candidates)];
   }
 
-  // Try HEAD sequentially until we find an available config
-  (async function tryUrls(){
+  function loadConfigFromUrl(url) {
+    const xhr = new XMLHttpRequest();
+    xhr.open('GET', url, false);
+    xhr.send(null);
+
+    if (xhr.status >= 200 && xhr.status < 300 && xhr.responseText) {
+      const script = document.createElement('script');
+      script.textContent = xhr.responseText;
+      document.head.appendChild(script);
+      return Boolean(window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey && window.FIREBASE_CONFIG.projectId);
+    }
+
+    return false;
+  }
+
+  function loadConfig() {
+    if (window.FIREBASE_CONFIG && window.FIREBASE_CONFIG.apiKey && window.FIREBASE_CONFIG.projectId) {
+      return;
+    }
+
+    const candidateUrls = buildCandidateUrls();
     for (const url of candidateUrls) {
-      try {
-        const resp = await fetch(url, { method: 'HEAD', cache: 'no-cache' });
-        if (resp.ok) {
-          insertScript(url);
-          return;
-        }
-      } catch (e) {
-        // ignore and try next
+      if (loadConfigFromUrl(url)) {
+        return;
       }
     }
-    // If none worked, try inserting the raw fallback script as last resort
-    insertScript(candidateUrls[candidateUrls.length - 1]);
-  })();
+  }
+
+  window.loadFirebaseConfig = loadConfig;
+  loadConfig();
 })();
