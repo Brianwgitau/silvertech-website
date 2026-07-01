@@ -53,6 +53,7 @@
     }
 
     const candidateUrls = buildCandidateUrls();
+    console.debug('loadFirebaseConfig: candidate URLs', candidateUrls);
     for (const url of candidateUrls) {
       if (loadConfigFromUrl(url)) {
         return;
