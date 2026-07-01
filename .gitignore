@@ -13,3 +13,4 @@ google-services.json
 *.p12
 *.crt
 *.jks
+public/

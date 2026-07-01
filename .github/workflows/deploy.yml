@@ -37,12 +37,15 @@ jobs:
           EOFCONFIG
 
       - name: Generate cloudinary-config.js from secrets when available
-        if: ${{ secrets.CLOUDINARY_CLOUD_NAME != '' }}
+        if: ${{ env.CLOUDINARY_CLOUD_NAME }}
+        env:
+          CLOUDINARY_CLOUD_NAME: ${{ secrets.CLOUDINARY_CLOUD_NAME }}
+          CLOUDINARY_UPLOAD_PRESET: ${{ secrets.CLOUDINARY_UPLOAD_PRESET }}
         run: |
           cat > ./public/cloudinary-config.js <<'EOFCONFIG'
           window.CLOUDINARY_CONFIG = {
-            cloudName: "${{ secrets.CLOUDINARY_CLOUD_NAME }}",
-            uploadPreset: "${{ secrets.CLOUDINARY_UPLOAD_PRESET }}"
+            cloudName: "${CLOUDINARY_CLOUD_NAME}",
+            uploadPreset: "${CLOUDINARY_UPLOAD_PRESET}"
           };
           EOFCONFIG
 
