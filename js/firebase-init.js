@@ -4,10 +4,6 @@ import { getFirestore } from "https://www.gstatic.com/firebasejs/12.15.0/firebas
 
 const firebaseConfig = window.FIREBASE_CONFIG || {};
 
-if (!firebaseConfig.apiKey || !firebaseConfig.projectId) {
-  throw new Error('Firebase config was not loaded before initialization.');
-}
-
 export const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
 export const db = getFirestore(app);

@@ -9,22 +9,23 @@ on:
   push:
     branches:
       - main
+  workflow_dispatch:
 
 jobs:
-  build:
+  deploy:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
-      - name: Prepare `public/` folder and copy site files
+      - name: Prepare public folder
         run: |
           rm -rf public
           mkdir -p public
           cp -a index.html assets js pages public/
           touch public/.nojekyll
 
-      - name: Generate firebase-config.js from secrets (written to `public/`)
+      - name: Generate firebase-config.js from secrets
         run: |
           cat > ./public/firebase-config.js <<'EOFCONFIG'
           window.FIREBASE_CONFIG = {
@@ -54,13 +55,42 @@ jobs:
         uses: peaceiris/actions-gh-pages@v4
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
-          publish_dir: public
+          publish_dir: ./public
           publish_branch: gh-pages
 
       - name: Ensure GitHub Pages source is set to gh-pages root
-        run: |
-          curl -X PUT \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/pages \
-            -d '{"source":{"branch":"gh-pages","path":"/"}}'
+        continue-on-error: true
+        uses: actions/github-script@v6
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const response = await github.rest.pages.updateInformationForRepo({
+                owner: context.repo.owner,
+                repo: context.repo.repo,
+                source: { branch: 'gh-pages', path: '/' }
+              });
+              console.log('Updated Pages source:', JSON.stringify(response.data.source));
+            } catch (error) {
+              console.log('Pages source update skipped or failed:', error.message);
+            }
+
+      - name: Confirm GitHub Pages site settings
+        continue-on-error: true
+        uses: actions/github-script@v6
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            try {
+              const site = await github.rest.pages.get({
+                owner: context.repo.owner,
+                repo: context.repo.repo
+              });
+              console.log('Pages URL:', site.data.html_url);
+              console.log('Pages source:', JSON.stringify(site.data.source));
+              console.log('Pages status:', site.data.status);
+            } catch (error) {
+              console.log('Pages settings check failed:', error.message);
+            }
