@@ -59,9 +59,24 @@ jobs:
           publish_branch: gh-pages
 
       - name: Ensure GitHub Pages source is set to gh-pages root
-        run: |
-          curl -X PUT \
-            -H "Accept: application/vnd.github+json" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            https://api.github.com/repos/${{ github.repository }}/pages \
-            -d '{"source":{"branch":"gh-pages","path":"/"}}'
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const response = await github.rest.pages.updateInformationForRepo({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              source: { branch: 'gh-pages', path: '/' }
+            });
+            console.log('Updated Pages source:', response.data.source);
+
+      - name: Confirm GitHub Pages site settings
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const site = await github.rest.pages.get({
+              owner: context.repo.owner,
+              repo: context.repo.repo
+            });
+            console.log('Pages URL:', site.data.html_url);
+            console.log('Pages source:', JSON.stringify(site.data.source));
+            console.log('Pages status:', site.data.status);
