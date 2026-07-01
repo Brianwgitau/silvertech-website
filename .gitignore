@@ -9,10 +9,8 @@ serviceAccount.json
 cloudinary-config.js
 firebase-config.js
 google-services.json
-!firebase-config.js
 *.key
 *.pem
 *.p12
 *.crt
 *.jks
-public/
